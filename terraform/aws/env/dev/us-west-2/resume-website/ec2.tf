@@ -25,7 +25,7 @@ resource "aws_key_pair" "stanley-dev-key-pair" {
 }
 
 # instance is in region us-west-1
-resource "aws_instance" "stanley-amazon-linux-1" {
+resource "aws_instance" "webservers" {
   ami                    = "ami-0f5e8a042c8bfcd5e"
   instance_type          = "t2.micro"
   vpc_security_group_ids = [aws_security_group.web-sg.id]
@@ -35,6 +35,29 @@ resource "aws_instance" "stanley-amazon-linux-1" {
     Name = "stanley-dev-us-west-2"
     terraform = "True"
   }
+}
+
+# Autoscaling group
+resource "aws_launch_template" "webservers" {
+  name_prefix = "webservers"
+  image_id = "ami-0f5e8a042c8bfcd5e"
+  instance_type = "t2.micro"
+}
+
+resource "aws_autoscaling_group" "webservers" {
+  availability_zone = ["us-west-2a"]
+  desired_capcity = 1
+  max_size = 5
+  min_size = 1
+  launch_template {
+    id = aws_launch_template.webservers.id
+    version = "$Latest"
+  }
+}
+
+resource "aws_eip" "lb" {
+  instance = aws_instance.webservers.id
+  vpc = true
 }
 
 /*
